@@ -1,0 +1,53 @@
+version: "3"
+
+services:
+
+  keycloak:
+    image: docker.io/bitnami/keycloak:20.0.3
+    restart: always
+    ports:
+      - "8443:8443"
+    environment:
+      KEYCLOAK_CREATE_ADMIN_USER: ${KEYCLOAK_CREATE_ADMIN_USER}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_MANAGEMENT_USER: ${KEYCLOAK_MANAGEMENT_USER}
+      KEYCLOAK_MANAGEMENT_PASSWORD: ${KEYCLOAK_MANAGEMENT_PASSWORD}
+      KEYCLOAK_ENABLE_HTTPS: "true"
+      KEYCLOAK_HTTPS_USE_PEM: "true"
+      KEYCLOAK_HTTPS_CERTIFICATE_FILE: /opt/bitnami/keycloak/certs/tls.crt
+      KEYCLOAK_HTTPS_CERTIFICATE_KEY_FILE: /opt/bitnami/keycloak/certs/tls.key
+      KEYCLOAK_DATABASE_HOST: ${KEYCLOAK_DATABASE_HOST:-postgresql}
+      KEYCLOAK_DATABASE_PORT: ${KEYCLOAK_DATABASE_PORT:-5432}
+      KEYCLOAK_DATABASE_NAME: ${KEYCLOAK_DATABASE_NAME:-keycloak}
+      KEYCLOAK_DATABASE_USER: ${KEYCLOAK_DATABASE_USER:-keycloak}
+      KEYCLOAK_DATABASE_PASSWORD: ${POSTGRESQL_PASSWORD}
+    volumes:
+      - ./certs/keycloak:/opt/bitnami/keycloak/certs
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    healthcheck:
+      test: curl --fail --insecure https://localhost:8443/
+      interval: 3s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+  postgresql:
+    image: docker.io/bitnami/postgresql:15
+    restart: always
+    environment:
+      POSTGRESQL_USERNAME: ${KEYCLOAK_DATABASE_USER:-keycloak}
+      POSTGRESQL_DATABASE: ${KEYCLOAK_DATABASE_NAME:-keycloak}
+      POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
+    volumes:
+      - postgresql_data:/bitnami/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgresql_data:
