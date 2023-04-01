@@ -1,4 +1,5 @@
 .vscode
-.env
+ingress-keycloak.yaml
 
+keycloak/.env
 keycloak/certs

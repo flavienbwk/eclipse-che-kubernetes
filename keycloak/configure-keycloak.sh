@@ -29,7 +29,7 @@ msg_error() {
 
 
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-ENV_PATH="$SCRIPT_DIR/../.env"
+ENV_PATH="$SCRIPT_DIR/.env"
 
 if [ -f "$ENV_PATH" ]; then
     source "$ENV_PATH"
@@ -51,7 +51,7 @@ fi
 
 msg_info "Getting admin access token..."
 ADMIN_TOKEN=$(curl -ks -X POST \
-"$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
+"$KEYCLOAK_INTERNAL_URL/realms/master/protocol/openid-connect/token" \
 -H "Content-Type: application/x-www-form-urlencoded" \
 -d "username=$KEYCLOAK_ADMIN_USER" \
 -d "password=$KEYCLOAK_ADMIN_PASSWORD" \
@@ -65,7 +65,7 @@ else
 fi
 
 msg_info "Setting access token lifespan to 1 hour..."
-response_details=$(curl -iks -X PUT "$KEYCLOAK_URL/admin/realms/master" \
+response_details=$(curl -iks -X PUT "$KEYCLOAK_INTERNAL_URL/admin/realms/master" \
 -H "Authorization: Bearer $ADMIN_TOKEN" \
 -H "Content-Type: application/json" \
 -d '
@@ -81,14 +81,13 @@ else
 fi
 
 msg_info "Creating $KEYCLOAK_CHE_CLIENT_ID client"
-response=$(curl -kis -X POST "$KEYCLOAK_URL/admin/realms/master/clients" \
+response=$(curl -kis -X POST "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients" \
 -H "Authorization: Bearer $ADMIN_TOKEN" \
 -H "Content-Type: application/json" \
 -d '
 {
     "clientId": "'"$KEYCLOAK_CHE_CLIENT_ID"'",
-    "rootUrl": "'"$KEYCLOAK_CHE_REDIRECT_URI"'",
-    "redirectUris": ["'"$KEYCLOAK_CHE_REDIRECT_URI"'/*", "http://localhost:8080/*"],
+    "redirectUris": ["'"$KEYCLOAK_CHE_REDIRECT_URI"'*", "https://localhost:8443/*", "https://172.17.0.1:8443/*"],
     "authorizationServicesEnabled": false,
     "implicitFlowEnabled": false,
     "directAccessGrantsEnabled": true,
@@ -108,7 +107,7 @@ else
 fi
 
 msg_info "Getting $KEYCLOAK_CHE_CLIENT_ID client details"
-response_details=$(curl -kis -X GET "$KEYCLOAK_URL/admin/realms/master/clients" \
+response_details=$(curl -kis -X GET "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients" \
 -H "Authorization: Bearer $ADMIN_TOKEN" \
 -H "Content-Type: application/json")
 response=$( echo "$response_details" | grep HTTP | awk '{print $2}')
@@ -136,7 +135,7 @@ else
 fi
 
 msg_info "Adding realm roles mapper to $KEYCLOAK_CHE_CLIENT_ID client"
-response=$(curl -kis -X POST "$KEYCLOAK_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/protocol-mappers/add-models" \
+response=$(curl -kis -X POST "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/protocol-mappers/add-models" \
 -H "Authorization: Bearer $ADMIN_TOKEN" \
 -H "Content-Type: application/json" \
 --data-raw '[{"name":"realm roles","protocol":"openid-connect","protocolMapper":"oidc-usermodel-realm-role-mapper","consentRequired":false,"config":{"multivalued":"true","user.attribute":"foo","access.token.claim":"true","claim.name":"realm_access.roles","jsonType.label":"String"}}]' \
@@ -151,7 +150,7 @@ else
 fi
 
 msg_info "Listing role mappers for $KEYCLOAK_CHE_CLIENT_ID client"
-response_details=$(curl -kis -X GET "$KEYCLOAK_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM" \
+response_details=$(curl -kis -X GET "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM" \
 -H "Authorization: Bearer $ADMIN_TOKEN" \
 -H "Content-Type: application/json")
 response=$(echo "$response_details"| grep HTTP | awk '{print $2}')
@@ -181,7 +180,7 @@ fi
 
 msg_info "Patching realm roles mapper for $KEYCLOAK_CHE_CLIENT_ID client"
 CLAIM_NAME="roles"
-response=$(curl -kis -X PUT "$KEYCLOAK_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/protocol-mappers/models/$PROTOCOL_MAPPER_ID" \
+response=$(curl -kis -X PUT "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/protocol-mappers/models/$PROTOCOL_MAPPER_ID" \
 -H "Authorization: Bearer $ADMIN_TOKEN" \
 -H "Content-Type: application/json" \
 --data-raw '{"id":"'"$PROTOCOL_MAPPER_ID"'","protocol":"openid-connect","protocolMapper":"oidc-usermodel-realm-role-mapper","name":"realm roles","config":{"usermodel.realmRoleMapping.rolePrefix":"","claim.name":"'"$CLAIM_NAME"'","multivalued":"true","jsonType.label":"String","id.token.claim":"true","access.token.claim":"true","userinfo.token.claim":"true"}}' \
@@ -213,7 +212,7 @@ else
 fi
 
 msg_info "Creating $KEYCLOAK_APP_CLIENT_ID client for web access"
-response=$(curl -kis -X POST "$KEYCLOAK_URL/admin/realms/master/clients" \
+response=$(curl -kis -X POST "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients" \
 -H "Authorization: Bearer $ADMIN_TOKEN" \
 -H "Content-Type: application/json" \
 -d '
