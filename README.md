@@ -66,6 +66,7 @@ At this step, I expect you to have :
     ```txt
         - --oidc-issuer-url=https://172.17.0.1:8443/realms/master
         - --oidc-client-id=apacheche
+        - --oidc-username-claim=email
         - --oidc-ca-file=/etc/ca-certificates/keycloak-ca.pem
     ```
 
@@ -75,5 +76,52 @@ At this step, I expect you to have :
 
     ```bash
     kubectl create secret tls tls-keycloak-ingress --cert ./keycloak/certs/keycloak/keycloak.pem --key ./keycloak/certs/keycloak/keycloak.key
-    sed "s|\$KEYCLOAK_EXTERNAL_URL|${KEYCLOAK_EXTERNAL_URL#https://}|g" ingress-keycloak-example.yaml > ingress-keycloak.yaml && kubectl apply -f ./ingress-keycloak.yaml
+    sed "s|\$KEYCLOAK_EXTERNAL_URL|${KEYCLOAK_EXTERNAL_URL#https://}|g" ingress-keycloak-example.yaml > ingress-keycloak.yaml
+    sed -i "s|\$CHE_EXTERNAL_URL|${CHE_EXTERNAL_URL#https://}|g" ingress-keycloak.yaml
+    kubectl apply -f ./ingress-keycloak.yaml
     ```
+
+### C. Install Apache Che
+
+1. Install the chectl command line
+
+    ```bash
+    bash <(curl -sL  https://www.eclipse.org/che/chectl/)
+    ```
+
+2. Configure Keycloak certificates for Che
+
+    ```bash
+    kubectl create namespace eclipse-che
+    kubectl create configmap keycloak-certs \
+        --from-file=keycloak-ca.crt=./keycloak/certs/keycloak/tls.crt \
+        -n eclipse-che
+    kubectl label configmap keycloak-certs \
+        app.kubernetes.io/part-of=che.eclipse.org \
+        app.kubernetes.io/component=ca-bundle \
+        -n eclipse-che
+    ```
+
+3. Generate the config file and run the install
+
+    ```bash
+    cp che-patch-example.yaml che-patch.yaml
+    sed -i "s|\$KEYCLOAK_CHE_CLIENT_SECRET|${KEYCLOAK_CHE_CLIENT_SECRET}|g" che-patch.yaml
+    sed -i "s|\$KEYCLOAK_CHE_CLIENT_ID|${KEYCLOAK_CHE_CLIENT_ID}|g" che-patch.yaml
+    sed -i "s|\$KEYCLOAK_EXTERNAL_URL|${KEYCLOAK_EXTERNAL_URL}|g" che-patch.yaml
+
+    chectl server:deploy --domain=${CHE_EXTERNAL_URL#*://} --platform=k8s --che-operator-cr-patch-yaml=./che-patch.yaml --telemetry=off --skip-cert-manager
+    ```
+
+    > If something goes wrong, you can uninstall the Che server :
+    > 
+    > ```bash
+    > chectl server:delete
+    > kubectl delete ns eclipse-che
+    > ```
+    >
+    > Run again commands from step 2.
+
+4. Connect to `CHE_EXTERNAL_URL` !
+
+    ![Apache Che dashboard](./images/che-dashboard.png)

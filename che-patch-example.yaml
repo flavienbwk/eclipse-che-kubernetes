@@ -1,0 +1,23 @@
+kind: CheCluster
+apiVersion: org.eclipse.che/v2
+spec:
+  networking:
+    auth:
+      externalIdentityProvider: true
+      oAuthClientName: "$KEYCLOAK_CHE_CLIENT_ID"
+      oAuthSecret: "$KEYCLOAK_CHE_CLIENT_SECRET"
+      identityProviderURL: "$KEYCLOAK_EXTERNAL_URL/realms/master"
+      openShiftoAuth: false
+      gateway:
+        deployment:
+          containers:
+            - name: oauth-proxy
+              env:
+                - name: OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL
+                  value: "true"
+                - name: OAUTH2_PROXY_PASS_HOST_HEADER
+                  value: "false"
+  components:
+    cheServer:
+      extraProperties:
+        CHE_OIDC_USERNAME__CLAIM: email
