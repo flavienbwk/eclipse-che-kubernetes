@@ -14,7 +14,7 @@ openssl req -new -x509 -sha256 -days 360 -subj "$CERTS_DN/CN=CA" -key "$CERTS_DI
 openssl genrsa -out "$CERTS_DIR/keycloak/keycloak-temp.key" 2048
 openssl pkcs8 -inform PEM -outform PEM -in "$CERTS_DIR/keycloak/keycloak-temp.key" -topk8 -nocrypt -v1 PBE-SHA1-3DES -out "$CERTS_DIR/keycloak/keycloak.key"
 openssl req -new -subj "$CERTS_DN/CN=keycloak" -key "$CERTS_DIR/keycloak/keycloak.key"  -out "$CERTS_DIR/keycloak/keycloak.csr"
-openssl x509 -req -days 360 -extfile <(printf "subjectAltName=DNS:localhost,DNS:$KEYCLOAK_EXTERNAL_URL,IP:127.0.0.1,IP:172.17.0.1,DNS:keycloak") -in "$CERTS_DIR/keycloak/keycloak.csr" -CA "$CERTS_DIR/ca/root-ca.pem" -CAkey "$CERTS_DIR/ca/root-ca.key" -CAcreateserial -sha256 -out "$CERTS_DIR/keycloak/keycloak.pem"
+openssl x509 -req -days 360 -extfile <(printf "subjectAltName=DNS:localhost,DNS:${KEYCLOAK_EXTERNAL_URL#https://},IP:127.0.0.1,IP:172.17.0.1,DNS:keycloak") -in "$CERTS_DIR/keycloak/keycloak.csr" -CA "$CERTS_DIR/ca/root-ca.pem" -CAkey "$CERTS_DIR/ca/root-ca.key" -CAcreateserial -sha256 -out "$CERTS_DIR/keycloak/keycloak.pem"
 cp "$CERTS_DIR/keycloak/keycloak.key" "$CERTS_DIR/keycloak/tls.key"
 cp "$CERTS_DIR/keycloak/keycloak.pem" "$CERTS_DIR/keycloak/tls.crt"
 

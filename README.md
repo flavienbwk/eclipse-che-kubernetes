@@ -18,7 +18,8 @@ It is recommended to setup Che on a dedicated machine (VM or baremetal) due to r
 
 At this step, I expect you to have :
 
-- A working Kubernetes cluster up and running with an Ingress Controller installed
+- A working Kubernetes cluster up and running 
+- An Ingress Controller installed on your cluster
 - Docker installed on the same machine (or a remote host, as long as you edit the following configurations)
 
 ### A. Setup Keycloak
@@ -73,6 +74,6 @@ At this step, I expect you to have :
 3. Make Keycloak accessible through your Ingress Controller
 
     ```bash
-    kubectl create secret tls tls-keycloak-ingress --cert ./keycloak/certs/ca/root-ca.pem --key ./keycloak/certs/ca/root-ca.key
+    kubectl create secret tls tls-keycloak-ingress --cert ./keycloak/certs/keycloak/keycloak.pem --key ./keycloak/certs/keycloak/keycloak.key
     sed "s|\$KEYCLOAK_EXTERNAL_URL|${KEYCLOAK_EXTERNAL_URL#https://}|g" ingress-keycloak-example.yaml > ingress-keycloak.yaml && kubectl apply -f ./ingress-keycloak.yaml
     ```
