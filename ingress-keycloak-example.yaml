@@ -1,36 +1,33 @@
----
-apiVersion: v1
-kind: Endpoints
-metadata:
-  name: external-keycloak
-subsets:
-- addresses:
-  - ip: 172.17.0.1
-  ports:
-  - port: 8443
----
 apiVersion: v1
 kind: Service
 metadata:
   name: external-keycloak
 spec:
+  type: ClusterIP
   ports:
-  - port: 443
-    protocol: TCP
+  - name: https
+    port: 443
     targetPort: 8443
+---
+kind: Endpoints
+apiVersion: v1
+metadata:
+  name: external-keycloak
+subsets:
+  - addresses :
+      - ip : 172.17.0.1
+    ports:
+      - name: https
+        port: 8443
+        protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: external-keycloak
   annotations:
-    kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: "nginx"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    nginx.ingress.kubernetes.io/rewrite-target: "/"
-    nginx.ingress.kubernetes.io/server-snippet: |
-        proxy_ssl_name $KEYCLOAK_EXTERNAL_URL;
-        proxy_ssl_server_name on;
 spec:
   tls:
     - hosts:
@@ -46,4 +43,4 @@ spec:
           service:
             name: external-keycloak
             port:
-              number: 443
+              name: https
