@@ -76,6 +76,7 @@ At this step, I expect you to have :
 
     ```bash
     kubectl create secret tls tls-keycloak-ingress --cert ./keycloak/certs/keycloak/keycloak.pem --key ./keycloak/certs/keycloak/keycloak.key
+
     sed "s|\$KEYCLOAK_EXTERNAL_URL|${KEYCLOAK_EXTERNAL_URL#https://}|g" ingress-keycloak-example.yaml > ingress-keycloak.yaml
     sed -i "s|\$CHE_EXTERNAL_URL|${CHE_EXTERNAL_URL#https://}|g" ingress-keycloak.yaml
     kubectl apply -f ./ingress-keycloak.yaml
@@ -109,6 +110,7 @@ At this step, I expect you to have :
     sed -i "s|\$KEYCLOAK_CHE_CLIENT_SECRET|${KEYCLOAK_CHE_CLIENT_SECRET}|g" che-patch.yaml
     sed -i "s|\$KEYCLOAK_CHE_CLIENT_ID|${KEYCLOAK_CHE_CLIENT_ID}|g" che-patch.yaml
     sed -i "s|\$KEYCLOAK_EXTERNAL_URL|${KEYCLOAK_EXTERNAL_URL}|g" che-patch.yaml
+    sed -i "s|\$CHE_EXTERNAL_URL|${CHE_EXTERNAL_URL}|g" che-patch.yaml
 
     chectl server:deploy --domain=${CHE_EXTERNAL_URL#*://} --platform=k8s --che-operator-cr-patch-yaml=./che-patch.yaml --telemetry=off --skip-cert-manager
     ```
