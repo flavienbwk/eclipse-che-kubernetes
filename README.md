@@ -4,6 +4,8 @@ All resources to instanciate Eclipse Che on your own Kubernetes cluster.
 
 This is the companion repo for the Medium post "Developing in the Cloud".
 
+:warning: **This repo is under alpha.**
+
 ## Architecture and pre-requisites
 
 ![Eclipse Che architecture with Kubernetes](./images/keycloak-che.jpg)
