@@ -4,7 +4,7 @@ All resources to instanciate Eclipse Che on your own Kubernetes cluster.
 
 This is the companion repo for the Medium post "Developing in the Cloud".
 
-:warning: **This repo is in alpha state.**
+:warning: **This repo is in alpha state. The blogpost is in progress.**
 
 ## Architecture and pre-requisites
 
