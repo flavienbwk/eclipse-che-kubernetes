@@ -180,13 +180,131 @@ fi
 
 msg_info "Patching realm roles mapper for $KEYCLOAK_CHE_CLIENT_ID client"
 CLAIM_NAME="roles"
-response=$(curl -kis -X PUT "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/protocol-mappers/models/$PROTOCOL_MAPPER_ID" \
+response_details=$(curl -kis -X PUT "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/protocol-mappers/models/$PROTOCOL_MAPPER_ID" \
 -H "Authorization: Bearer $ADMIN_TOKEN" \
 -H "Content-Type: application/json" \
 --data-raw '{"id":"'"$PROTOCOL_MAPPER_ID"'","protocol":"openid-connect","protocolMapper":"oidc-usermodel-realm-role-mapper","name":"realm roles","config":{"usermodel.realmRoleMapping.rolePrefix":"","claim.name":"'"$CLAIM_NAME"'","multivalued":"true","jsonType.label":"String","id.token.claim":"true","access.token.claim":"true","userinfo.token.claim":"true"}}' \
 --compressed \
+--insecure)
+response=$(echo $response_details | grep HTTP | awk '{print $2}')
+if [ "$response" == "409" ]; then
+    msg_notice "\u2713 (already added)"
+elif [ "$response" == "204" ]; then
+    msg_success "\u2713"
+else
+    msg_error "\u2717"
+    exit 1
+fi
+
+msg_info "Adding admin client role..."
+response=$(curl -kis -X POST "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/roles" \
+-H "Authorization: Bearer $ADMIN_TOKEN" \
+-H "Content-Type: application/json" \
+--compressed \
 --insecure \
+--data-raw '{"name":"admin"}' \
 | grep HTTP | awk '{print $2}')
+if [ "$response" == "409" ]; then
+    msg_notice "\u2713 (already added)"
+elif [ "$response" == "201" ]; then
+    msg_success "\u2713"
+else
+    msg_error "\u2717"
+    exit 1
+fi
+msg_info "Adding developer client role..."
+response=$(curl -kis -X POST "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/roles" \
+-H "Authorization: Bearer $ADMIN_TOKEN" \
+-H "Content-Type: application/json" \
+--compressed \
+--insecure \
+--data-raw '{"name":"developer"}' \
+| grep HTTP | awk '{print $2}')
+if [ "$response" == "409" ]; then
+    msg_notice "\u2713 (already added)"
+elif [ "$response" == "201" ]; then
+    msg_success "\u2713"
+else
+    msg_error "\u2717"
+    exit 1
+fi
+
+msg_info "Adding predefined mapper groups to the dedicated client scope..."
+response_details=$(curl -kis -X POST "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/protocol-mappers/add-models" \
+-H "Authorization: Bearer $ADMIN_TOKEN" \
+-H "Content-Type: application/json" \
+--data-raw '[{"name":"groups","protocol":"openid-connect","protocolMapper":"oidc-usermodel-realm-role-mapper","consentRequired":false,"config":{"multivalued":"true","user.attribute":"foo","id.token.claim":"true","access.token.claim":"true","claim.name":"groups","jsonType.label":"String"}}]' \
+--compressed \
+--insecure)
+response=$(echo $response_details | grep HTTP | awk '{print $2}')
+if [ "$response" == "409" ]; then
+    msg_notice "\u2713 (already added)"
+elif [ "$response" == "204" ]; then
+    msg_success "\u2713"
+else
+    msg_error "\u2717"
+    exit 1
+fi
+
+msg_info "Retrieve $KEYCLOAK_ADMIN_USER details..."
+response_details=$(curl -kis -X GET "$KEYCLOAK_INTERNAL_URL/admin/realms/master/users?username=$KEYCLOAK_ADMIN_USER" \
+-H "Authorization: Bearer $ADMIN_TOKEN" \
+-H "Content-Type: application/json" \
+--compressed \
+--insecure)
+response=$(echo $response_details | grep HTTP | awk '{print $2}')
+if [ "$response" == "200" ]; then
+    msg_success "\u2713"
+    KEYCLOAK_ADMIN_USER_ID=$(echo "$response_details" | tail -1 | jq '.[].id' | tr -d '"')
+else
+    msg_error "\u2717"
+    exit 1
+fi
+
+msg_info "Retrieve $KEYCLOAK_CHE_CLIENT_ID:admin role details"
+response_details=$(curl -kis -X GET "$KEYCLOAK_INTERNAL_URL/admin/realms/master/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM/roles" \
+-H "Authorization: Bearer $ADMIN_TOKEN" \
+-H "Content-Type: application/json" \
+--compressed \
+--insecure)
+response=$(echo $response_details | grep HTTP | awk '{print $2}')
+if [ "$response" == "200" ]; then
+    msg_success "\u2713"
+    KEYCLOAK_CLIENT_ROLE_ADMIN_ID=$(echo "$response_details" | tail -1 | jq '.[] | select(.name == "admin") | .id' | tr -d '"')
+    if [ ! -n "$KEYCLOAK_CLIENT_ROLE_ADMIN_ID" ]; then
+        msg_error "admin role ID was not found !"
+        exit 1
+    fi
+else
+    msg_error "\u2717"
+    exit 1
+fi
+
+msg_info "Attribute $KEYCLOAK_CHE_CLIENT_ID:admin role to $KEYCLOAK_ADMIN_USER"
+response_details=$(curl -kis -X POST "$KEYCLOAK_INTERNAL_URL/admin/realms/master/users/$KEYCLOAK_ADMIN_USER_ID/role-mappings/clients/$KEYCLOAK_CHE_CLIENT_ID_NUM" \
+-H "Authorization: Bearer $ADMIN_TOKEN" \
+-H "Content-Type: application/json" \
+--data-raw '[{"id":"'"$KEYCLOAK_CLIENT_ROLE_ADMIN_ID"'","name":"admin"}]' \
+--compressed \
+--insecure)
+response=$(echo $response_details | grep HTTP | awk '{print $2}')
+if [ "$response" == "409" ]; then
+    msg_notice "\u2713 (already added)"
+elif [ "$response" == "204" ]; then
+    msg_success "\u2713"
+else
+    msg_error "\u2717"
+    exit 1
+fi
+
+msg_info "Add valid email to $KEYCLOAK_ADMIN_USER"
+response_details=$(curl -kis -X PUT "$KEYCLOAK_INTERNAL_URL/admin/realms/master/users/$KEYCLOAK_ADMIN_USER_ID" \
+-H "Authorization: Bearer $ADMIN_TOKEN" \
+-H "Content-Type: application/json" \
+--data-raw '{"enabled":true,"username":"'"$KEYCLOAK_ADMIN_USER"'","email":"'"$KEYCLOAK_ADMIN_USER"'@example.local","firstName":"'"$KEYCLOAK_ADMIN_USER"'","lastName":"'"$KEYCLOAK_ADMIN_USER"'","emailVerified":true,"requiredActions":[]}' \
+--compressed \
+--insecure)
+response=$(echo $response_details | grep HTTP | awk '{print $2}')
 if [ "$response" == "409" ]; then
     msg_notice "\u2713 (already added)"
 elif [ "$response" == "204" ]; then
