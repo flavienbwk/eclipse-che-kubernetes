@@ -26,11 +26,16 @@ At this step, I expect you to have :
 
 ### A. Setup Keycloak
 
-1. **Copy** env variables
+1. Install dependencies
+
+    - jq
+    - docker
+    - docker-compose
+
+2. **Copy** env variables
 
     ```bash
-    cd ./keycloak
-    cp .env.example .env
+    cp ./keycloak/.env.example ./keycloak/.env
     ```
 
     Correctly set `KEYCLOAK_EXTERNAL_URL` in your `.env` file replacing `xxx.xxx.xxx.xxx` with your cluster **IP address**. Then run :
@@ -39,21 +44,28 @@ At this step, I expect you to have :
     export $(grep -v '^#' ./keycloak/.env | xargs)
     ```
 
-2. **Generate** certs and start Keycloak
+3. **Generate** certs and start Keycloak
 
     ```
+    cd keycloak
+
     bash ./generate-certs.sh
     docker-compose up -d
     ```
 
-3. **Create** and configure the `apacheche` client in Keycloak
+4. **Create** and configure the `apacheche` client in Keycloak
 
     ```
     bash ./configure-keycloak.sh
+    
     cd ..
+    kubectl create ns test-ns
+    kubectl apply -f ./rbac.yaml
     ```
 
-### B. Bind Kubernetes to use Keycloak
+    > `KEYCLOAK_ADMIN_USER` will get attributed the "admin" role to play inside Che. A "developer" role can be assigned as well but has no RBAC configured related to Che : they only have access to namespace `test-ns`.
+
+### B. Bind Kubernetes to use Keycloak as OIDC provider
 
 1. Copy Keycloak's certificate to your system keystore
 
@@ -67,8 +79,10 @@ At this step, I expect you to have :
 
     ```txt
         - --oidc-issuer-url=https://172.17.0.1:8443/realms/master
-        - --oidc-client-id=apacheche
+        - --oidc-client-id=kubernetes
         - --oidc-username-claim=email
+        - --oidc-groups-prefix='keycloak:'
+        - --oidc-groups-claim=groups
         - --oidc-ca-file=/etc/ca-certificates/keycloak-ca.pem
     ```
 
@@ -82,6 +96,17 @@ At this step, I expect you to have :
     sed "s|\$KEYCLOAK_EXTERNAL_URL|${KEYCLOAK_EXTERNAL_URL#https://}|g" ingress-keycloak-example.yaml > ingress-keycloak.yaml
     sed -i "s|\$CHE_EXTERNAL_URL|${CHE_EXTERNAL_URL#https://}|g" ingress-keycloak.yaml
     kubectl apply -f ./ingress-keycloak.yaml
+    ```
+
+4. Patch Ingress Controller's ConfigMap to make it [forward the right headers](https://www.keycloak.org/server/reverseproxy)
+
+    ```bash
+    kubectl patch configmap ingress-nginx-controller -n ingress-nginx --type merge --patch "$(cat << EOF
+    data:
+        use-forwarded-headers: "true"
+        forwarded-for-header: "X-Forwarded-For"
+    EOF
+    )"
     ```
 
 ### C. Install Apache Che
@@ -122,6 +147,13 @@ At this step, I expect you to have :
     > ```bash
     > chectl server:delete
     > kubectl delete ns eclipse-che
+    > ```
+    >
+    > If you want to delete devworkspaces :
+    > 
+    > ```bash
+    > git clone https://github.com/devfile/devworkspace-operator && cd devworkspace-operator
+    > make uninstall
     > ```
     >
     > Run again commands from step 2.

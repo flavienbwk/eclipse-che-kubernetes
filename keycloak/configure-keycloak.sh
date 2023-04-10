@@ -306,7 +306,7 @@ response_details=$(curl -kis -X PUT "$KEYCLOAK_INTERNAL_URL/admin/realms/master/
 --insecure)
 response=$(echo $response_details | grep HTTP | awk '{print $2}')
 if [ "$response" == "409" ]; then
-    msg_notice "\u2713 (already added)"
+    msg_success "\u2713"
 elif [ "$response" == "204" ]; then
     msg_success "\u2713"
 else
