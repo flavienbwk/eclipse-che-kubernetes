@@ -21,8 +21,12 @@ It is recommended to setup Che on a dedicated machine (VM or baremetal) due to r
 At this step, I expect you to have :
 
 - A working Kubernetes cluster up and running 
-- An Ingress Controller installed on your cluster
+- An [Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/) installed on your cluster
+- [Certmanager](https://cert-manager.io/docs/installation/) installed on your cluster
+- [OpenEBS](https://openebs.io/docs/user-guides/installation) installed on your cluster (or another storage class)
 - Docker installed on the same machine (or a remote host, as long as you edit the following configurations)
+
+To help you setup your standalone Kubernetes with kubeadm, use scripts in `./helpers`.
 
 ### A. Setup Keycloak
 
@@ -77,8 +81,10 @@ At this step, I expect you to have :
 
 2. Add the following configuration to `/etc/kubernetes/manifests/kube-apiserver.yaml`
 
+    Please **replace** `KEYCLOAK_EXTERNAL_URL` !
+
     ```txt
-        - --oidc-issuer-url=https://172.17.0.1:8443/realms/master
+        - --oidc-issuer-url=$KEYCLOAK_EXTERNAL_URL/realms/master
         - --oidc-client-id=kubernetes
         - --oidc-username-claim=email
         - --oidc-groups-prefix='keycloak:'
@@ -86,7 +92,7 @@ At this step, I expect you to have :
         - --oidc-ca-file=/etc/ca-certificates/keycloak-ca.pem
     ```
 
-    :clock: Please wait at least 30 seconds and test the cluster is still working running `kubectl get po -A`
+    :hourglass_flowing_sand: Please wait at least 1 minute and check that the cluster is still working running `kubectl get po -A`
 
 3. Make Keycloak accessible through your Ingress Controller
 
@@ -96,17 +102,6 @@ At this step, I expect you to have :
     sed "s|\$KEYCLOAK_EXTERNAL_URL|${KEYCLOAK_EXTERNAL_URL#https://}|g" ingress-keycloak-example.yaml > ingress-keycloak.yaml
     sed -i "s|\$CHE_EXTERNAL_URL|${CHE_EXTERNAL_URL#https://}|g" ingress-keycloak.yaml
     kubectl apply -f ./ingress-keycloak.yaml
-    ```
-
-4. Patch Ingress Controller's ConfigMap to make it [forward the right headers](https://www.keycloak.org/server/reverseproxy)
-
-    ```bash
-    kubectl patch configmap ingress-nginx-controller -n ingress-nginx --type merge --patch "$(cat << EOF
-    data:
-        use-forwarded-headers: "true"
-        forwarded-for-header: "X-Forwarded-For"
-    EOF
-    )"
     ```
 
 ### C. Install Apache Che
@@ -132,6 +127,8 @@ At this step, I expect you to have :
 
 3. Generate the config file and run the install
 
+    :warning: If you're not using OpenEBS, please edit Che's `storageClass` inside `che-patch-example.yaml`.
+
     ```bash
     cp che-patch-example.yaml che-patch.yaml
     sed -i "s|\$KEYCLOAK_CHE_CLIENT_SECRET|${KEYCLOAK_CHE_CLIENT_SECRET}|g" che-patch.yaml
@@ -142,17 +139,18 @@ At this step, I expect you to have :
     chectl server:deploy --domain=${CHE_EXTERNAL_URL#*://} --platform=k8s --che-operator-cr-patch-yaml=./che-patch.yaml --telemetry=off --skip-cert-manager
     ```
 
-    > If something goes wrong, you can uninstall the Che server :
+    > If something goes wrong, you can uninstall Che using the following commands :
     > 
     > ```bash
     > chectl server:delete
     > kubectl delete ns eclipse-che
     > ```
     >
-    > If you want to delete devworkspaces :
+    > And delete the Devworkspaces operator :
     > 
     > ```bash
-    > git clone https://github.com/devfile/devworkspace-operator && cd devworkspace-operator
+    > git clone https://github.com/devfile/devworkspace-operator
+    > cd devworkspace-operator
     > make uninstall
     > ```
     >

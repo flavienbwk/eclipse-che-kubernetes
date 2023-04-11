@@ -1,12 +1,16 @@
 kind: CheCluster
 apiVersion: org.eclipse.che/v2
 spec:
+  devEnvironments:
+    storage:
+      pvc:
+        storageClass: 'openebs-device'
   networking:
     auth:
       externalIdentityProvider: true
       oAuthClientName: "$KEYCLOAK_CHE_CLIENT_ID"
       oAuthSecret: "$KEYCLOAK_CHE_CLIENT_SECRET"
-      identityProviderURL: "$KEYCLOAK_INTERNAL_URL/realms/master"
+      identityProviderURL: "$KEYCLOAK_EXTERNAL_URL/realms/master"
       openShiftoAuth: false
   components:
     cheServer:
