@@ -127,8 +127,6 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
 
 3. Generate the config file and run the install
 
-    :warning: If you're not using OpenEBS, please edit Che's `storageClass` inside `che-patch-example.yaml`.
-
     ```bash
     cp che-patch-example.yaml che-patch.yaml
     sed -i "s|\$KEYCLOAK_CHE_CLIENT_SECRET|${KEYCLOAK_CHE_CLIENT_SECRET}|g" che-patch.yaml
@@ -142,16 +140,7 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
     > If something goes wrong, you can uninstall Che using the following commands :
     > 
     > ```bash
-    > chectl server:delete
-    > kubectl delete ns eclipse-che
-    > ```
-    >
-    > And delete the Devworkspaces operator :
-    > 
-    > ```bash
-    > git clone https://github.com/devfile/devworkspace-operator
-    > cd devworkspace-operator
-    > make uninstall
+    > chectl server:delete --delete-all --delete-namespace
     > ```
     >
     > Run again commands from step 2.
@@ -159,3 +148,5 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
 4. Connect to `CHE_EXTERNAL_URL` !
 
     ![Apache Che dashboard](./images/che-dashboard.png)
+
+    A lot is now to be configured to appropriately isolate development payloads from other ones in your cluster. [Enjoy the documentation](https://www.eclipse.org/che/docs/stable/administration-guide/configuring-che/) !

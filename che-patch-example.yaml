@@ -1,10 +1,6 @@
 kind: CheCluster
 apiVersion: org.eclipse.che/v2
 spec:
-  devEnvironments:
-    storage:
-      pvc:
-        storageClass: 'openebs-device'
   networking:
     auth:
       externalIdentityProvider: true
