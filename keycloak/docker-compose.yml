@@ -6,10 +6,11 @@ services:
     image: docker.io/bitnami/keycloak:20.0.3
     restart: always
     ports:
-      - "172.17.0.1:8443:8443"
+      - "8443:8443"
     environment:
+      KEYCLOAK_FRONTEND_URL: ${KEYCLOAK_EXTERNAL_URL}
       KEYCLOAK_CREATE_ADMIN_USER: ${KEYCLOAK_CREATE_ADMIN_USER}
-      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KEYCLOAK_MANAGEMENT_USER: ${KEYCLOAK_MANAGEMENT_USER}
       KEYCLOAK_MANAGEMENT_PASSWORD: ${KEYCLOAK_MANAGEMENT_PASSWORD}
@@ -17,10 +18,10 @@ services:
       KEYCLOAK_HTTPS_USE_PEM: "true"
       KEYCLOAK_HTTPS_CERTIFICATE_FILE: /opt/bitnami/keycloak/certs/tls.crt
       KEYCLOAK_HTTPS_CERTIFICATE_KEY_FILE: /opt/bitnami/keycloak/certs/tls.key
-      KEYCLOAK_DATABASE_HOST: ${KEYCLOAK_DATABASE_HOST:-postgresql}
-      KEYCLOAK_DATABASE_PORT: ${KEYCLOAK_DATABASE_PORT:-5432}
-      KEYCLOAK_DATABASE_NAME: ${KEYCLOAK_DATABASE_NAME:-keycloak}
-      KEYCLOAK_DATABASE_USER: ${KEYCLOAK_DATABASE_USER:-keycloak}
+      KEYCLOAK_DATABASE_HOST: postgresql
+      KEYCLOAK_DATABASE_PORT: 5432
+      KEYCLOAK_DATABASE_NAME: keycloak
+      KEYCLOAK_DATABASE_USER: keycloak
       KEYCLOAK_DATABASE_PASSWORD: ${POSTGRESQL_PASSWORD}
       PROXY_ADDRESS_FORWARDING: "true"
     volumes:
@@ -39,8 +40,8 @@ services:
     image: docker.io/bitnami/postgresql:15
     restart: always
     environment:
-      POSTGRESQL_USERNAME: ${KEYCLOAK_DATABASE_USER:-keycloak}
-      POSTGRESQL_DATABASE: ${KEYCLOAK_DATABASE_NAME:-keycloak}
+      POSTGRESQL_USERNAME: keycloak
+      POSTGRESQL_DATABASE: keycloak
       POSTGRESQL_PASSWORD: ${POSTGRESQL_PASSWORD}
     volumes:
       - postgresql_data:/bitnami/postgresql

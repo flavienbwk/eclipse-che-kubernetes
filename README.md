@@ -21,16 +21,25 @@ It is recommended to setup Che on a dedicated machine (VM or baremetal) due to r
 At this step, I expect you to have :
 
 - A working Kubernetes cluster up and running 
-- An Ingress Controller installed on your cluster
+- An [Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/) installed on your cluster
+- [Certmanager](https://cert-manager.io/docs/installation/) installed on your cluster
+- [OpenEBS](https://openebs.io/docs/user-guides/installation) installed on your cluster (or another storage class)
 - Docker installed on the same machine (or a remote host, as long as you edit the following configurations)
+
+To help you setup your standalone Kubernetes with kubeadm, use scripts in `./helpers`.
 
 ### A. Setup Keycloak
 
-1. **Copy** env variables
+1. Install dependencies
+
+    - jq
+    - docker
+    - docker-compose
+
+2. **Copy** env variables
 
     ```bash
-    cd ./keycloak
-    cp .env.example .env
+    cp ./keycloak/.env.example ./keycloak/.env
     ```
 
     Correctly set `KEYCLOAK_EXTERNAL_URL` in your `.env` file replacing `xxx.xxx.xxx.xxx` with your cluster **IP address**. Then run :
@@ -39,21 +48,28 @@ At this step, I expect you to have :
     export $(grep -v '^#' ./keycloak/.env | xargs)
     ```
 
-2. **Generate** certs and start Keycloak
+3. **Generate** certs and start Keycloak
 
     ```
+    cd keycloak
+
     bash ./generate-certs.sh
     docker-compose up -d
     ```
 
-3. **Create** and configure the `apacheche` client in Keycloak
+4. **Create** and configure the `apacheche` client in Keycloak
 
     ```
     bash ./configure-keycloak.sh
+    
     cd ..
+    kubectl create ns test-ns
+    kubectl apply -f ./rbac.yaml
     ```
 
-### B. Bind Kubernetes to use Keycloak
+    > `KEYCLOAK_ADMIN_USER` will get attributed the "admin" role to play inside Che. A "developer" role can be assigned as well but has no RBAC configured related to Che : they only have access to namespace `test-ns`.
+
+### B. Bind Kubernetes to use Keycloak as OIDC provider
 
 1. Copy Keycloak's certificate to your system keystore
 
@@ -65,14 +81,18 @@ At this step, I expect you to have :
 
 2. Add the following configuration to `/etc/kubernetes/manifests/kube-apiserver.yaml`
 
+    Please **replace** `KEYCLOAK_EXTERNAL_URL` !
+
     ```txt
-        - --oidc-issuer-url=https://172.17.0.1:8443/realms/master
-        - --oidc-client-id=apacheche
+        - --oidc-issuer-url=$KEYCLOAK_EXTERNAL_URL/realms/master
+        - --oidc-client-id=kubernetes
         - --oidc-username-claim=email
+        - --oidc-groups-prefix='keycloak:'
+        - --oidc-groups-claim=groups
         - --oidc-ca-file=/etc/ca-certificates/keycloak-ca.pem
     ```
 
-    :clock: Please wait at least 30 seconds and test the cluster is still working running `kubectl get po -A`
+    :hourglass_flowing_sand: Please wait at least 1 minute and check that the cluster is still working running `kubectl get po -A`
 
 3. Make Keycloak accessible through your Ingress Controller
 
@@ -117,11 +137,12 @@ At this step, I expect you to have :
     chectl server:deploy --domain=${CHE_EXTERNAL_URL#*://} --platform=k8s --che-operator-cr-patch-yaml=./che-patch.yaml --telemetry=off --skip-cert-manager
     ```
 
-    > If something goes wrong, you can uninstall the Che server :
+    :information_source: Make sure you have a default _storage class_ installed on your cluster.
+
+    > If something goes wrong, you can uninstall Che using the following commands :
     > 
     > ```bash
-    > chectl server:delete
-    > kubectl delete ns eclipse-che
+    > chectl server:delete --delete-all --delete-namespace
     > ```
     >
     > Run again commands from step 2.
