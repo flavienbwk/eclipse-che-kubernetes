@@ -10,25 +10,20 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.7.0/deploy/static/provider/baremetal/deploy.yaml
 
 kubectl apply -f https://openebs.github.io/charts/openebs-operator.yaml
-#kubectl apply -f https://openebs.github.io/charts/cstor-operator.yaml
-#kubectl patch storageclass openebs-device -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-#kubectl apply -f - <<EOF
-#apiVersion: v1
-#kind: PersistentVolume
-#metadata:
-#  name: openebs-device-pv
-#  annotations:
-#    openebs.io/block-device: <blockdevice-name>
-#spec:
-#  capacity:
-#    storage: <required-storage-capacity>
-#  accessModes:
-#    - ReadWriteOnce
-#  persistentVolumeReclaimPolicy: Delete
-#  storageClassName: openebs-device
-#  local:
-#    path: /dev
-#EOF
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: PersistentVolume
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-device
+provisioner: openebs.io/local
+volumeBindingMode: WaitForFirstConsumer
+reclaimPolicy: Delete
+parameters:
+  storageType: "device"
+EOF
+kubectl patch storageclass local-device -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
 systemctl restart containerd
 systemctl restart kubelet
