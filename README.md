@@ -137,6 +137,8 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
     chectl server:deploy --domain=${CHE_EXTERNAL_URL#*://} --platform=k8s --che-operator-cr-patch-yaml=./che-patch.yaml --telemetry=off --skip-cert-manager
     ```
 
+    :information_source: Make sure you have a default _storage class_ installed on your cluster.
+
     > If something goes wrong, you can uninstall Che using the following commands :
     > 
     > ```bash
@@ -148,5 +150,3 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
 4. Connect to `CHE_EXTERNAL_URL` !
 
     ![Apache Che dashboard](./images/che-dashboard.png)
-
-    A lot is now to be configured to appropriately isolate development payloads from other ones in your cluster. [Enjoy the documentation](https://www.eclipse.org/che/docs/stable/administration-guide/configuring-che/) !
