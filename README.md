@@ -1,10 +1,8 @@
 # Eclipse Che on Kubernetes
 
-All resources to instanciate Eclipse Che on your own Kubernetes cluster.
+All resources to instanciate Eclipse Che on your own (_kubeadm-installed_ or similar) Kubernetes cluster.
 
-This is the companion repo for the Medium post "Developing in the Cloud".
-
-:warning: **This repo is in alpha state. The blogpost is in progress.**
+Read the Medium article : ["Developing in the Cloud"](https://medium.com/@flavienb/developing-in-the-cloud-5cfc9b2236ef).
 
 ## Architecture and pre-requisites
 
@@ -14,7 +12,7 @@ Eclipse Che [requires an OIDC identity provider](https://github.com/eclipse/che/
 
 Keycloak must be run in an external environment in order to be reachable by our Kubernetes' API server at startup. A dedicated role and rolebinding will be created in our cluster.
 
-It is recommended to setup Che on a dedicated machine (VM or baremetal) due to rigorous pre-requisites for it to work.
+It is recommended to setup Che on a dedicated machine (VM or baremetal) due to its heavy requirements.
 
 ## Getting started
 
@@ -23,7 +21,7 @@ At this step, I expect you to have :
 - A working Kubernetes cluster up and running 
 - An [Ingress Controller](https://kubernetes.github.io/ingress-nginx/deploy/) installed on your cluster
 - [Certmanager](https://cert-manager.io/docs/installation/) installed on your cluster
-- [OpenEBS](https://openebs.io/docs/user-guides/installation) installed on your cluster (or another storage class)
+- A storage class such as [OpenEBS](https://openebs.io/docs/user-guides/installation) installed on your cluster
 - Docker installed on the same machine (or a remote host, as long as you edit the following configurations)
 
 To help you setup your standalone Kubernetes with kubeadm, use scripts in `./helpers`.
@@ -50,7 +48,7 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
 
 3. **Generate** certs and start Keycloak
 
-    ```
+    ```bash
     cd keycloak
 
     bash ./generate-certs.sh
@@ -59,7 +57,7 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
 
 4. **Create** and configure the `apacheche` client in Keycloak
 
-    ```
+    ```bash
     bash ./configure-keycloak.sh
     
     cd ..
@@ -104,7 +102,7 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
     kubectl apply -f ./ingress-keycloak.yaml
     ```
 
-### C. Install Apache Che
+### C. Install Eclipse Che
 
 1. Install the chectl command line
 
@@ -149,4 +147,4 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
 
 4. Connect to `CHE_EXTERNAL_URL` !
 
-    ![Apache Che dashboard](./images/che-dashboard.png)
+    ![Eclipse Che dashboard](./images/che-dashboard.png)
