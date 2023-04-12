@@ -55,7 +55,7 @@ To help you setup your standalone Kubernetes with kubeadm, use scripts in `./hel
     docker-compose up -d
     ```
 
-4. **Create** and configure the `apacheche` client in Keycloak
+4. **Create** and configure the `kubernetes` client in Keycloak
 
     ```bash
     bash ./configure-keycloak.sh
