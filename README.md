@@ -2,7 +2,7 @@
 
 All resources to instanciate Eclipse Che on your own (_kubeadm-installed_ or similar) Kubernetes cluster.
 
-:page_with_curl: Read the Medium article : ["Developing in the Cloud"](https://medium.com/@flavienb/developing-in-the-cloud-5cfc9b2236ef).
+:point_right: Read the Medium article : ["Developing in the Cloud"](https://medium.com/@flavienb/developing-in-the-cloud-5cfc9b2236ef).
 
 ## Architecture and pre-requisites
 
